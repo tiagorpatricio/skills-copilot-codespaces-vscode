@@ -1,42 +1,27 @@
 //create web server
-var http = require('http');
-var fs = require('fs');
-var qs = require('querystring');
-var url = require('url');
-var comments = [];
+const express = require('express');
+const app = express();
 
-//create server
-http.createServer(function(req, res) {
-    //parse request
-    var url_parts = url.parse(req.url, true);
-    var query = url_parts.query;
-    var path = url_parts.pathname;
+//body-parser
+const bodyParser = require('body-parser');
+app.use(bodyParser.json());
 
-    //handle POST request
-    if (req.method === 'POST' && path === '/comment') {
-        var body = '';
-        req.on('data', function(data) {
-            body += data;
-        });
-        req.on('end', function() {
-            var POST = qs.parse(body);
-            comments.push(POST.comment);
-            res.end('Comment added');
-        });
-    }
+//create in-memory database
+const comments = [];
 
-    //handle GET request
-    if (path === '/comments') {
-        res.end(JSON.stringify(comments));
-    }
+//get all comments
+app.get('/comments', (req, res) => {
+  res.json(comments);
+});
 
-    //serve html file
-    if (path === '/') {
-        fs.readFile('index.html', function(err, data) {
-            res.end(data);
-        });
-    }
+//create a comment
+app.post('/comments', (req, res) => {
+  const comment = req.body;
+  comments.push(comment);
+  res.status(201).json(comment);
+});
 
-}).listen(8080);
-
-console.log('Server running at http://
+//start server
+app.listen(3000, () => {
+  console.log('Server started');
+});
