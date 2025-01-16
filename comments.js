@@ -1,42 +1,45 @@
 //create web server
 var http = require('http');
 var fs = require('fs');
-var path = require('path');
 var url = require('url');
-var port = 3000;
+var path = require('path');
+
 var comments = [];
-var server = http.createServer(function(request, response) {
-    var parseUrl = url.parse(request.url, true);
-    var pathname = parseUrl.pathname;
-    if (pathname === '/') {
-        fs.readFile('./index.html', function(err, data) {
-            if (err) {
-                console.log(err);
-            }
-            response.writeHead(200, {
-                'Content-Type': 'text/html'
-            });
-            response.write(data);
-            response.end();
-        });
-    } else if (pathname === '/addComment') {
-        var comment = parseUrl.query;
-        comments.push(comment);
-        response.end();
-    } else if (pathname === '/getComments') {
-        response.writeHead(200, {
-            'Content-Type': 'text/json'
-        });
-        response.write(JSON.stringify(comments));
-        response.end();
-    } else {
-        response.writeHead(404, {
-            'Content-Type': 'text/plain'
-        });
-        response.write('404 - Page Not Found');
-        response.end();
-    }
-});
-server.listen(port, function() {
-    console.log(`Server is running at http://localhost:${port}`);
+
+http.createServer(function (req, res) {
+  //parse url
+  var urlObj = url.parse(req.url, true);
+  var pathname = urlObj.pathname;
+  //handle favicon.ico
+  if (pathname === '/favicon.ico') {
+    res.end();
+    return;
+  }
+  //handle static resource
+  if (pathname === '/' || pathname === '/index.html') {
+    var filePath = path.join(__dirname, 'index.html');
+    var fileContent = fs.readFileSync(filePath);
+    res.setHeader('Content-Type', 'text/html');
+    res.end(fileContent);
+  } else if (pathname === '/addComment') {
+    //add comment
+    var comment = urlObj.query;
+    comment.dateTime = new Date();
+    comments.push(comment);
+    //redirect
+    res.statusCode = 302;
+    res.statusMessage = 'Found';
+    res.setHeader('Location', '/');
+    res.end();
+  } else if (pathname === '/getComments') {
+    //get comments
+    var str = JSON.stringify(comments);
+    res.end(str);
+  } else {
+    res.statusCode = 404;
+    res.statusMessage = 'Not Found';
+    res.end();
+  }
+}).listen(3000, function () {
+  console.log('server is listening on port 3000');
 });
